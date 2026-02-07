@@ -11,3 +11,4 @@ from .dsPackets import (
     create_udp_packet
 )
 from .avController import AVController, MatchSound
+from .hubInterface import HubInterface, LightColor

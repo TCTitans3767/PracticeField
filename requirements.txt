@@ -1,0 +1,6 @@
+numpy
+requests
+pygame
+flask
+flask_socketio
+bleak

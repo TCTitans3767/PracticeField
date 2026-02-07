@@ -9,7 +9,7 @@ MATCH_SOUNDS_DIR = Path(__file__).parent.parent / "MatchSounds"
 
 class MatchSound(Enum):
     CHANGE_PHASE = "changePhase.wav"
-    END_AUTON = "endAuto.wav"
+    END_AUTON = "endAuton.wav"
     END_MATCH = "endMatch.wav"
     E_STOP = "eStop.wav"
     START_ENDGAME = "startEndGame.wav"

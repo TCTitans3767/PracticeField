@@ -8,22 +8,38 @@ import config as cfg
 FRONTEND_DIR = Path(__file__).parent.parent / "FrontEnd"
 
 _web_data = {
-    "red1": {"estop": False, "connected": False},
-    "red2": {"estop": False, "connected": False},
-    "red3": {"estop": False, "connected": False},
-    "blue1": {"estop": False, "connected": False},
-    "blue2": {"estop": False, "connected": False},
-    "blue3": {"estop": False, "connected": False},
     "match_time": 0.0,
     "phase": "init",
     "score": 0,
     "start_button_pressed": False,
     "stop_button_pressed": False,
+    "auton_outcome": "random",
+    "bt_color": "field_control",
+    "bt_connect": "",
+    "ds1" : {
+        "team": "",
+        "connected": False,
+        "estop": False
+    },
+    "ds2" : {
+        "team": "",
+        "connected": False,
+        "estop": False
+    },
+    "ds3" : {
+        "team": "",
+        "connected": False,
+        "estop": False
+    },
 }
 
 
 app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path='')
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode="threading"
+)
 
 
 @app.route('/')
@@ -50,8 +66,9 @@ def set_data(data: dict):
             _web_data[key] = value
     socketio.emit('update', _web_data)
 
-def get_data() -> dict:
-    return _web_data.copy()
+def get_data(key: str = None):
+    if not key : return _web_data.copy()
+    return _web_data.get(key)
 
 @socketio.on('match_control')
 def handle_match_control(data):
@@ -68,7 +85,6 @@ def handle_update_field(data):
     field = data.get('field')
     value = data.get('value')
 
-    # Map input field names to _web_data
     if field in ['auton_outcome','bt_color','bt_connect']:
         _web_data[field] = value
     elif field in ['ds1_team','ds2_team','ds3_team']:
@@ -76,8 +92,8 @@ def handle_update_field(data):
         if ds in _web_data:
             _web_data[ds]['team'] = value
 
-    # Broadcast update to all clients
     socketio.emit('update', _web_data)
+    print(_web_data)
 
 
 
@@ -85,11 +101,11 @@ def start_background_updates(interval: float = 0.1):
     def _loop():
         while True:
             socketio.emit('update', _web_data)
-            time.sleep(interval)
+            socketio.sleep(interval)
     thread = threading.Thread(target=_loop, daemon=True)
     thread.start()
 
 
-def start_server(host='0.0.0.0', port=5000):
+def start_server(host=cfg.WEB_SERVER_HOST, port=cfg.WEB_SERVER_PORT):
     start_background_updates()
     socketio.run(app, host=host, port=port)
