@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FMS Scoring</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>FMS Scoring</header>
+
+<div class="score-container">
+    <div class="score-block">
+        <div class="team-label">Score</div>
+        <div id="score" class="score-number">0</div>
+    </div>
+
+    <div class="score-block">
+        <div class="team-label">Time Left</div>
+        <div id="match-time" class="score-number">0</div>
+    </div>
+
+    <div class="score-block">
+        <div class="team-label">Mode</div>
+        <div id="mode" class="score-number">init</div>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script src="js/scoring.js"></script>
+</body>
+</html>

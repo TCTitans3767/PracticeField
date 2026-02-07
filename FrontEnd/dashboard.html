@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FMS Dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>FMS Dashboard</header>
+
+<div class="container">
+
+    <div class="section">
+        <h2>Match Controls</h2>
+        <button onclick="startMatch()">Start Match</button>
+        <button onclick="stopMatch()">Stop Match</button>
+        <p><strong>Match Time:</strong> <span id="match_time">0.0</span></p>
+        <p><strong>Match Phase:</strong> <span id="phase">init</span></p>
+        <p><strong>Current Score:</strong> <span id="score_display">0</span></p>
+        <label>Auton Outcome:</label>
+        <select id="auton_outcome">
+            <option value="win">Win</option>
+            <option value="lose">Lose</option>
+            <option value="random">Random</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <h2>Driver Stations</h2>
+
+        <div class="ds-status" id="ds1_status">
+            <h3>DS1</h3>
+            <p>Connected: <span id="ds1_connected">No</span></p>
+            <p>Estopped: <span id="ds1_estop">No</span></p>
+            <p>Team Number: <input type="text" id="ds1_team" /></p>
+        </div>
+
+        <div class="ds-status" id="ds2_status">
+            <h3>DS2</h3>
+            <p>Connected: <span id="ds2_connected">No</span></p>
+            <p>Estopped: <span id="ds2_estop">No</span></p>
+            <p>Team Number: <input type="text" id="ds2_team" /></p>
+        </div>
+
+        <div class="ds-status" id="ds3_status">
+            <h3>DS3</h3>
+            <p>Connected: <span id="ds3_connected">No</span></p>
+            <p>Estopped: <span id="ds3_estop">No</span></p>
+            <p>Team Number: <input type="text" id="ds3_team" /></p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Radio / Network</h2>
+        <p>Status: <span id="radio_status">Disconnected</span></p>
+    </div>
+
+    <div class="section">
+        <h2>Bluetooth Device</h2>
+        <p>Device Connected: <span id="bt_connected">No</span></p>
+        <label>Connect Device:</label> <input type="text" id="bt_connect" placeholder="Device ID"/>
+        <br>
+        <label>Device Color:</label>
+        <select id="bt_color">
+            <option value="field_control">Field Control</option>
+            <option value="red">Red</option>
+            <option value="blue">Blue</option>
+            <option value="white">White</option>
+        </select>
+    </div>
+
+</div>
+
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
