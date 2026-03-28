@@ -1,0 +1,8 @@
+[package]
+name = "practice-fms"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.102"
+tokio = "1.50.0"
