@@ -1,0 +1,149 @@
+   0.035559700s  INFO prepare_target{force=false package_id=home-fms v0.1.0 (C:\Users\jc\PracticeField\backend\home-fms) target="home-fms"}: cargo::core::compiler::fingerprint: fingerprint error for home-fms v0.1.0 (C:\Users\jc\PracticeField\backend\home-fms)/Check { test: false }/TargetInner { name: "home-fms", doc: true, ..: with_path("C:\\Users\\jc\\PracticeField\\backend\\home-fms\\src\\main.rs", Edition2024) }
+   0.035631200s  INFO prepare_target{force=false package_id=home-fms v0.1.0 (C:\Users\jc\PracticeField\backend\home-fms) target="home-fms"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jc\PracticeField\backend\home-fms\target\debug\.fingerprint\home-fms-23d3c72e8a46ef5b\bin-home-fms`
+
+Caused by:
+    The system cannot find the file specified. (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_libgit2_prerelease
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: git_midx_writer_dump
+  17: git_filter_source_repo
+  18: git_midx_writer_dump
+  19: BaseThreadInitThunk
+  20: RtlUserThreadStart
+   0.051193600s  INFO prepare_target{force=false package_id=anyhow v1.0.102 target="anyhow"}: cargo::core::compiler::fingerprint: fingerprint error for anyhow v1.0.102/Check { test: false }/TargetInner { ..: lib_target("anyhow", ["lib"], "C:\\Users\\jc\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\anyhow-1.0.102\\src\\lib.rs", Edition2021) }
+   0.051235400s  INFO prepare_target{force=false package_id=anyhow v1.0.102 target="anyhow"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jc\PracticeField\backend\home-fms\target\debug\.fingerprint\anyhow-9c2b1ae3be6b3969\lib-anyhow`
+
+Caused by:
+    The system cannot find the file specified. (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_libgit2_prerelease
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: git_midx_writer_dump
+  18: git_filter_source_repo
+  19: git_midx_writer_dump
+  20: BaseThreadInitThunk
+  21: RtlUserThreadStart
+   0.053144000s  INFO prepare_target{force=false package_id=tokio v1.50.0 target="tokio"}: cargo::core::compiler::fingerprint: fingerprint error for tokio v1.50.0/Check { test: false }/TargetInner { ..: lib_target("tokio", ["lib"], "C:\\Users\\jc\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\tokio-1.50.0\\src\\lib.rs", Edition2021) }
+   0.053168600s  INFO prepare_target{force=false package_id=tokio v1.50.0 target="tokio"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jc\PracticeField\backend\home-fms\target\debug\.fingerprint\tokio-c28cc8145468d1e8\lib-tokio`
+
+Caused by:
+    The system cannot find the file specified. (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_libgit2_prerelease
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: git_midx_writer_dump
+  18: git_filter_source_repo
+  19: git_midx_writer_dump
+  20: BaseThreadInitThunk
+  21: RtlUserThreadStart
+   0.054216600s  INFO prepare_target{force=false package_id=pin-project-lite v0.2.17 target="pin_project_lite"}: cargo::core::compiler::fingerprint: fingerprint error for pin-project-lite v0.2.17/Check { test: false }/TargetInner { doc_scrape_examples: Disabled, ..: lib_target("pin_project_lite", ["lib"], "C:\\Users\\jc\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\pin-project-lite-0.2.17\\src\\lib.rs", Edition2018) }
+   0.054245800s  INFO prepare_target{force=false package_id=pin-project-lite v0.2.17 target="pin_project_lite"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jc\PracticeField\backend\home-fms\target\debug\.fingerprint\pin-project-lite-8e269f70c50e6f50\lib-pin_project_lite`
+
+Caused by:
+    The system cannot find the file specified. (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.055175100s  INFO prepare_target{force=false package_id=home-fms v0.1.0 (C:\Users\jc\PracticeField\backend\home-fms) target="home-fms"}: cargo::core::compiler::fingerprint: fingerprint error for home-fms v0.1.0 (C:\Users\jc\PracticeField\backend\home-fms)/Check { test: true }/TargetInner { name: "home-fms", doc: true, ..: with_path("C:\\Users\\jc\\PracticeField\\backend\\home-fms\\src\\main.rs", Edition2024) }
+   0.055200100s  INFO prepare_target{force=false package_id=home-fms v0.1.0 (C:\Users\jc\PracticeField\backend\home-fms) target="home-fms"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jc\PracticeField\backend\home-fms\target\debug\.fingerprint\home-fms-214ec3d8e982c603\test-bin-home-fms`
+
+Caused by:
+    The system cannot find the file specified. (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_libgit2_prerelease
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: git_midx_writer_dump
+  17: git_filter_source_repo
+  18: git_midx_writer_dump
+  19: BaseThreadInitThunk
+  20: RtlUserThreadStart
+    Checking pin-project-lite v0.2.17
+    Checking anyhow v1.0.102
+    Checking tokio v1.50.0
+    Checking home-fms v0.1.0 (C:\Users\jc\PracticeField\backend\home-fms)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.63s
