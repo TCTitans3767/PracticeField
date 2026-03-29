@@ -1,9 +1,11 @@
+use std::fmt::{Display, write};
+
 pub struct ToDS {}
 
 pub struct FromDS {
-    size: u16,
-    tag_id: u8,
-    tag: TagType,
+    pub size: u16,
+    pub tag_id: u8,
+    pub tag: TagType,
 }
 
 pub enum TagType {
@@ -65,14 +67,13 @@ pub const ROBOT_TELEOP_MASK: u8 = 0b0000_0100;
 pub const ROBOT_AUTO_MASK: u8 = 0b0000_0010;
 pub const ROBOT_DISABLE_MASK: u8 = 0b0000_0001;
 
-pub fn parse_driverstation_tcp(mut data: Vec<u8>) -> anyhow::Result<FromDS>{
-    
+pub fn parse_driverstation_tcp(mut data: Vec<u8>) -> anyhow::Result<FromDS> {
     let size_upper = (data.remove(0) as u16) << 8;
     let size_lower = data.remove(0) as u16;
 
     let id = data.remove(0);
-    
-    let mut tag_type = TagType::DSPing(DSPing {  });
+
+    let mut tag_type = TagType::DSPing(DSPing {});
 
     match id {
         0x00..=0x07 => {
@@ -82,8 +83,12 @@ pub fn parse_driverstation_tcp(mut data: Vec<u8>) -> anyhow::Result<FromDS>{
             let team_number_upper = (data.remove(0) as u16) << 8;
             let team_number_lower = data.remove(0) as u16;
             let unknown = data.remove(0);
-            let entry_data = EntryData {data: data};
-            tag_type = TagType::UsageReport(UsageReport { team_num: team_number_upper | team_number_lower, unknown: unknown, entry_data: entry_data })
+            let entry_data = EntryData { data: data };
+            tag_type = TagType::UsageReport(UsageReport {
+                team_num: team_number_upper | team_number_lower,
+                unknown: unknown,
+                entry_data: entry_data,
+            })
         }
         0x16 => {
             let trip_time = data.remove(0);
@@ -95,7 +100,15 @@ pub fn parse_driverstation_tcp(mut data: Vec<u8>) -> anyhow::Result<FromDS>{
             let signal_db = data.remove(0);
             let bandwidth_high = (data.remove(0) as u16) << 8;
             let bandwidth_low = data.remove(0) as u16;
-            tag_type = TagType::LogData(LogData { trip_time, lost_packets, battery: (battery_xx + battery_yy) / 256, robot_status, can, signal_db, bandwidth: bandwidth_high | bandwidth_low })
+            tag_type = TagType::LogData(LogData {
+                trip_time,
+                lost_packets,
+                battery: (battery_xx + battery_yy) / 256,
+                robot_status,
+                can,
+                signal_db,
+                bandwidth: bandwidth_high | bandwidth_low,
+            })
         }
         0x17 => {
             // TODO: Error and event data
@@ -103,16 +116,30 @@ pub fn parse_driverstation_tcp(mut data: Vec<u8>) -> anyhow::Result<FromDS>{
         0x18 => {
             let team_number_high = (data.remove(0) as u16) << 8;
             let team_number_low = data.remove(0) as u16;
-            tag_type = TagType::TeamNumber(TeamNumber { team_number: team_number_high | team_number_low })
+            tag_type = TagType::TeamNumber(TeamNumber {
+                team_number: team_number_high | team_number_low,
+            })
         }
-        _ => {
-
-        }
+        _ => {}
     }
 
     Ok(FromDS {
         size: size_upper | size_lower,
         tag_id: id,
-        tag: tag_type
+        tag: tag_type,
     })
+}
+
+impl Display for TagType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Version(_) => write!(f, "Version"),
+            Self::UsageReport(_) => write!(f, "Usage Report"),
+            Self::LogData(_) => write!(f, "Log Data"),
+            Self::ErrorEventData(_) => write!(f, "Error and Event Data"),
+            Self::TeamNumber(team_number) => write!(f, "Team Number {}", team_number.team_number),
+            Self::DSPing(_) => write!(f, "Driverstation Ping"),
+            Self::ChallengeResponse(_) => write!(f, "Challenge Response")
+        }
+    }
 }

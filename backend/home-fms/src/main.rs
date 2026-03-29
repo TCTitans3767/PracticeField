@@ -7,14 +7,15 @@ use anyhow::Context;
 
 pub mod driverstation_comms;
 
-use crate::{driverstation_comms::tcp::parseDriverstationTCP};
+use crate::driverstation_comms::tcp::parse_driverstation_tcp;
 
 const TCP_LISTENER_PORT: &str = "127.0.0.1:8080";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let ds_listener =
-        TcpListener::bind(TCP_LISTENER_PORT).await.context("Failed to open TCP listener server")?;
+    let ds_listener = TcpListener::bind(TCP_LISTENER_PORT)
+        .await
+        .context("Failed to open TCP listener server")?;
     println!("Spawned ds_listner server at port {}", TCP_LISTENER_PORT);
 
     tokio::spawn(tcp_listener(ds_listener));
@@ -65,8 +66,10 @@ async fn tcp_listener(listener: TcpListener) -> anyhow::Result<()> {
                 //         println!("{:#X} ", buf[i]);
                 //     }
                 // }
-            
-                parseDriverstationTCP(buf.to_vec());
+
+                if let Ok(packet) = parse_driverstation_tcp(buf.to_vec()) {
+                    println!("packet type: {}", packet.tag)
+                }
             }
         });
     }
