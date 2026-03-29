@@ -1,4 +1,9 @@
-use std::fmt::{Display, write};
+use std::{
+    fmt::{Display, write},
+    net::{SocketAddr},
+};
+
+use tokio::{io::AsyncReadExt, net::TcpStream};
 
 pub struct ToDS {}
 
@@ -130,6 +135,32 @@ pub fn parse_driverstation_tcp(mut data: Vec<u8>) -> anyhow::Result<FromDS> {
     })
 }
 
+pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr) {
+    loop {
+        let mut buf = [0; 1024];
+
+        let n = match socket.read(&mut buf).await {
+            Ok(n) if n == 0 => return,
+            Ok(n) => n,
+            Err(e) => {
+                eprintln!("failed to read: {e}");
+                return;
+            }
+        };
+
+        println!("recieved {} bytes from {}", n, addr);
+
+        if let Ok(packet) = parse_driverstation_tcp(buf.to_vec()) {
+            match packet.tag {
+                TagType::TeamNumber(team_number) => {
+                    println!("Team number: {}", team_number.team_number);
+                }
+                _ => todo!()
+            }
+        }
+    }
+}
+
 impl Display for TagType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -139,7 +170,7 @@ impl Display for TagType {
             Self::ErrorEventData(_) => write!(f, "Error and Event Data"),
             Self::TeamNumber(team_number) => write!(f, "Team Number {}", team_number.team_number),
             Self::DSPing(_) => write!(f, "Driverstation Ping"),
-            Self::ChallengeResponse(_) => write!(f, "Challenge Response")
+            Self::ChallengeResponse(_) => write!(f, "Challenge Response"),
         }
     }
 }

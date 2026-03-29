@@ -1,13 +1,13 @@
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::{TcpListener, TcpStream},
+    net::{TcpListener, TcpStream, tcp},
 };
 
 use anyhow::Context;
 
 pub mod driverstation_comms;
 
-use crate::driverstation_comms::tcp::parse_driverstation_tcp;
+use crate::driverstation_comms::{tcp::{ds_tcp_listener, parse_driverstation_tcp}, udp};
 
 const TCP_LISTENER_PORT: &str = "127.0.0.1:8080";
 
@@ -22,11 +22,11 @@ async fn main() -> anyhow::Result<()> {
 
     let mut stream = TcpStream::connect(TCP_LISTENER_PORT).await?;
 
-    let message = b"HII!!!!";
+    let message: [u8; 5] = [0xff, 0xff, 0x18, 0x0e, 0xb7];
 
     loop {
         stream
-            .write_all(message)
+            .write_all(&message)
             .await
             .context("failed to write to tcp stream")?;
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -37,40 +37,13 @@ async fn main() -> anyhow::Result<()> {
 
 async fn tcp_listener(listener: TcpListener) -> anyhow::Result<()> {
     loop {
-        let (mut socket, addr) = listener
+        let (socket, addr) = listener
             .accept()
             .await
             .context("Unable to retrieve socket and address from tcp listener")?;
 
         println!("connection started from address {}", addr);
 
-        tokio::spawn(async move {
-            loop {
-                let mut buf = [0; 1024];
-
-                let n = match socket.read(&mut buf).await {
-                    Ok(n) if n == 0 => return,
-                    Ok(n) => n,
-                    Err(e) => {
-                        eprintln!("failed to read: {e}");
-                        return;
-                    }
-                };
-
-                println!("recieved {} bytes from {}", n, addr);
-
-                // for i in 0..=n {
-                //     if i != n {
-                //         print!("{:#X} ", buf[i]);
-                //     } else {
-                //         println!("{:#X} ", buf[i]);
-                //     }
-                // }
-
-                if let Ok(packet) = parse_driverstation_tcp(buf.to_vec()) {
-                    println!("packet type: {}", packet.tag)
-                }
-            }
-        });
+        tokio::spawn(ds_tcp_listener(socket, addr));
     }
 }
