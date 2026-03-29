@@ -1,0 +1,40 @@
+Screens:
+- home page
+    - links to other pages
+- e/astop control
+    - use pin to determine which station to control
+    - estop
+    - astop
+    - show status
+- Match control
+    - [x] start/stop match
+    - [x] bypassing stations
+    - [x] monitor connections
+    - [ ] prestart
+    - [ ] take control button
+    - [ ] estop
+- Network settings (including hub connection)
+    - connect bluetooth
+    - set hub settings
+    - test hub
+    - set internet access/no access
+    - link to switch settings page
+    - ap channel and vlan settings
+    - enable/disable red side
+- Team management
+    - [x] set team numbers at stations
+    - [x] set wpakeys/randomize wpakeys
+    - [ ] set teams pins for their e/astops
+- vh109 flashing
+    - not technical users
+    - custom flash
+    - flash from team number and wpakey based off station
+- audience display
+    - match status
+    - time left
+    - score
+    - play sounds at times
+- log viewing
+    - match or last 5 mins of dev time
+    - team status over time per match
+    - network status over time per match
