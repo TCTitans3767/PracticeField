@@ -9,7 +9,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 export default function Page() {
   let isHubConnected: boolean;
 
-  const { data, error } = useSWR("http://localhost:3001/api/status", fetcher, { refreshInterval: 50000 });
+  const { data, error } = useSWR("/api/status", fetcher, { refreshInterval: 50000 });
   
   if (error) return <div>Error loading data</div>;
   if (!data) return <div>Loading...</div>;
