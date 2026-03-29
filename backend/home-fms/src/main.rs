@@ -5,6 +5,10 @@ use tokio::{
 
 use anyhow::Context;
 
+pub mod driverstation_comms;
+
+use crate::{driverstation_comms::tcp::parseDriverstationTCP};
+
 const TCP_LISTENER_PORT: &str = "127.0.0.1:8080";
 
 #[tokio::main]
@@ -54,13 +58,15 @@ async fn tcp_listener(listener: TcpListener) -> anyhow::Result<()> {
 
                 println!("recieved {} bytes from {}", n, addr);
 
-                for i in 0..=n {
-                    if i != n {
-                        print!("{:#X} ", buf[i]);
-                    } else {
-                        println!("{:#X} ", buf[i]);
-                    }
-                }
+                // for i in 0..=n {
+                //     if i != n {
+                //         print!("{:#X} ", buf[i]);
+                //     } else {
+                //         println!("{:#X} ", buf[i]);
+                //     }
+                // }
+            
+                parseDriverstationTCP(buf.to_vec());
             }
         });
     }
