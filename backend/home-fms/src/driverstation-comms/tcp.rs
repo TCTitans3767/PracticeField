@@ -8,6 +8,6 @@ pub struct fromDriverstation {
     
 }
 
-fn interpretDriverstationTCP() {
-
+fn parseDriverstationTCP(data: Vec<u8>) {
+    
 }
