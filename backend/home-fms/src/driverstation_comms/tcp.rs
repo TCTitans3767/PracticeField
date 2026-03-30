@@ -1,9 +1,11 @@
 use std::{
     fmt::{Display, write},
-    net::{SocketAddr},
+    net::SocketAddr, sync::Arc,
 };
 
-use tokio::{io::AsyncReadExt, net::TcpStream};
+use tokio::{io::AsyncReadExt, net::{TcpStream, UdpSocket}};
+
+use crate::driverstation_comms::driverstation_connection::new_driverstation;
 
 pub struct ToDS {}
 
@@ -135,7 +137,8 @@ pub fn parse_driverstation_tcp(mut data: Vec<u8>) -> anyhow::Result<FromDS> {
     })
 }
 
-pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr) {
+pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr, shared_udp_socket: Arc<UdpSocket>) {
+    let mut team_number_recieved = false;
     loop {
         let mut buf = [0; 1024];
 
@@ -154,6 +157,10 @@ pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr) {
             match packet.tag {
                 TagType::TeamNumber(team_number) => {
                     println!("Team number: {}", team_number.team_number);
+                    if team_number_recieved == false {
+                        team_number_recieved = true;
+                        tokio::spawn(new_driverstation(team_number.team_number, shared_udp_socket.clone()));
+                    }
                 }
                 _ => todo!()
             }

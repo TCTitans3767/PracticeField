@@ -2,48 +2,83 @@ use std::time::Duration;
 
 use tokio::net::UdpSocket;
 
-use crate::driverstation_comms::driverstation_connection;
+pub struct FMSUDPPacket {}
 
-pub struct FMSUDPPacket {
-}
-
+#[derive(Clone)]
 pub struct DSUDPData {
-    team_number: u16,
-    control_mode: [ControlMode; 2],
-    alliance_station: u8,
-    is_e_stopped: bool,
-    is_ds_alive: bool,
+    pub team_number: u16,
+    pub control_mode: [ControlMode; 2],
+    pub alliance_station: u8,
+    pub is_e_stopped: bool,
+    pub is_ds_alive: bool,
 }
 
+#[derive(Clone)]
 pub enum ControlMode {
     EStop,
     AStop,
     Enabled,
     Disabled,
     Teleop,
-    Autonomous
+    Autonomous,
+    Test,
 }
 
-const RED_1: u8 = 0;
-const RED_2: u8 = 1;
-const RED_3: u8 = 2;
-const BLUE_1: u8 = 3;
-const BLUE_2: u8 = 4;
-const BLUE_3: u8 = 5;
+pub const RED_1: u8 = 0;
+pub const RED_2: u8 = 1;
+pub const RED_3: u8 = 2;
+pub const BLUE_1: u8 = 3;
+pub const BLUE_2: u8 = 4;
+pub const BLUE_3: u8 = 5;
 
-const UDP_ADDRESS = "10.0.100.5:1120";
+pub fn create_udp_packet(data: DSUDPData) -> Vec<u8> {
+    let mut packet_data: Vec<u8> = Vec::new();
 
-async fn driverstation_udp_conn(team_number: u16, udp_conn: &DSUDPData) {
-    let mut udp_connection = DSUDPData {
-        team_number,
-        control_mode: [ControlMode::Teleop, ControlMode::Disabled],
-        alliance_station: BLUE_1,
-        is_e_stopped: false,
-        is_ds_alive: true
+    packet_data.push(0x0); // sequence num high
+    packet_data.push(0x0); // sequence num low
+
+    packet_data.push(0x0); // com version
+
+    let mut control_byte: u8 = 0x00;
+    let period = data.control_mode.get(0).unwrap();
+    let enabled = data.control_mode.get(1).unwrap();
+
+    match period {
+        ControlMode::Teleop => control_byte = control_byte | 0b0000_0000,
+        ControlMode::Test => control_byte = control_byte | 0b0000_0001,
+        ControlMode::Autonomous => control_byte = control_byte | 0b0000_0010,
+        _ => control_byte = control_byte | 0,
     };
-    let socket = UdpSocket::bind()
-    loop {
-        
-        tokio::time::sleep(Duration::from_millis(500)).await;
-    }
+
+    match enabled {
+        ControlMode::Enabled => control_byte = control_byte | 0b0000_0100,
+        ControlMode::Disabled => control_byte = control_byte | 0b0000_0000,
+        _ => control_byte = control_byte | 0b0000_0000,
+    };
+
+    packet_data.push(control_byte);
+
+    packet_data.push(0x00); // Request byte
+
+    packet_data.push(data.alliance_station);
+
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+    packet_data.push(0x00);
+
+    return packet_data;
 }

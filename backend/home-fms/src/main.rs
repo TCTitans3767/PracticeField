@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::{TcpListener, TcpStream, tcp},
+    net::{TcpListener, TcpStream, UdpSocket, tcp},
 };
 
 use anyhow::Context;
@@ -18,7 +20,10 @@ async fn main() -> anyhow::Result<()> {
         .context("Failed to open TCP listener server")?;
     println!("Spawned ds_listner server at port {}", TCP_LISTENER_PORT);
 
-    tokio::spawn(tcp_listener(ds_listener));
+    let ds_udp_socket = UdpSocket::bind("0.0.0.0:8080").await?;
+    let shared_udp_socket = Arc::new(ds_udp_socket);
+
+    tokio::spawn(tcp_listener(ds_listener, shared_udp_socket.clone()));
 
     let mut stream = TcpStream::connect(TCP_LISTENER_PORT).await?;
 
@@ -35,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn tcp_listener(listener: TcpListener) -> anyhow::Result<()> {
+async fn tcp_listener(listener: TcpListener, shared_udp_socket: Arc<UdpSocket>) -> anyhow::Result<()> {
     loop {
         let (socket, addr) = listener
             .accept()
@@ -44,6 +49,6 @@ async fn tcp_listener(listener: TcpListener) -> anyhow::Result<()> {
 
         println!("connection started from address {}", addr);
 
-        tokio::spawn(ds_tcp_listener(socket, addr));
+        tokio::spawn(ds_tcp_listener(socket, addr, shared_udp_socket));
     }
 }
