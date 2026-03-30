@@ -156,7 +156,7 @@ pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr, shared_udp
         if let Ok(packet) = parse_driverstation_tcp(buf.to_vec()) {
             match packet.tag {
                 TagType::TeamNumber(team_number) => {
-                    println!("Team number: {}", team_number.team_number);
+                    // println!("Team number: {}", team_number.team_number);
                     if team_number_recieved == false {
                         team_number_recieved = true;
                         tokio::spawn(new_driverstation(team_number.team_number, shared_udp_socket.clone()));

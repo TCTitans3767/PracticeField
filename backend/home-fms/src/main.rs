@@ -49,6 +49,6 @@ async fn tcp_listener(listener: TcpListener, shared_udp_socket: Arc<UdpSocket>) 
 
         println!("connection started from address {}", addr);
 
-        tokio::spawn(ds_tcp_listener(socket, addr, shared_udp_socket));
+        tokio::spawn(ds_tcp_listener(socket, addr, shared_udp_socket.clone()));
     }
 }

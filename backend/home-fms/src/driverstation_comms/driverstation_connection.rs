@@ -2,7 +2,7 @@ use std::{fmt::format, sync::Arc, time::Duration};
 
 use tokio::net::UdpSocket;
 
-use crate::driverstation_comms::{tcp::ds_tcp_listener, udp::{BLUE_1, ControlMode, DSUDPData, create_udp_packet}};
+use crate::driverstation_comms::{udp::{BLUE_1, ControlMode, DSUDPData, create_udp_packet}};
 
 pub struct DriverstationConnection {
     team_number: u16,
@@ -29,16 +29,18 @@ pub async fn new_driverstation(team_number: u16, shared_udp_socket: Arc<UdpSocke
         ds_control: DSControl::FMSFull,
     };
 
+    println!("new driverstation control thread created for team {}", team_number);
+
     let team_number_string = format!("{team_number}");
     let upper_team_numbers = if team_number_string.chars().count() > 5 {
-        &team_number_string[0..4]
-    } else {
         &team_number_string[0..3]
+    } else {
+        &team_number_string[0..2]
     };
     let lower_team_numbers = if team_number_string.chars().count() > 5 {
-        &team_number_string[4..6]
-    } else {
         &team_number_string[3..5]
+    } else {
+        &team_number_string[2..4]
     };
     let driverstation_ip = match driverstation_connection.ds_control {
         DSControl::FMSFull => format!("10.{upper_team_numbers}.{lower_team_numbers}.5:1120"),
@@ -48,6 +50,7 @@ pub async fn new_driverstation(team_number: u16, shared_udp_socket: Arc<UdpSocke
 
     loop {
         shared_udp_socket.send_to(&create_udp_packet(driverstation_connection.driverstation_udp.clone()), &driverstation_ip).await;
+        println!("sent udp packet to {}", &driverstation_ip);
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
 }
