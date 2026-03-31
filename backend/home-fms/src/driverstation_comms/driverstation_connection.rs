@@ -1,37 +1,53 @@
-use std::{fmt::format, sync::Arc, time::Duration};
+use std::{
+    fmt::format,
+    ops::Deref,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use tokio::net::UdpSocket;
 
-use crate::driverstation_comms::{udp::{BLUE_1, ControlMode, DSUDPData, create_udp_packet}};
+use crate::driverstation_comms::{
+    driverstation_connection,
+    fms::FMS,
+    udp::{BLUE_1, ControlMode, DSUDPData, create_udp_packet},
+};
 
+#[derive(Clone)]
 pub struct DriverstationConnection {
     team_number: u16,
     driverstation_udp: DSUDPData,
-    ds_control: DSControl
+    ds_control: DSControl,
 }
 
+impl DriverstationConnection {
+    pub fn new(team_number: u16) -> Self {
+        Self {
+            team_number,
+            driverstation_udp: DSUDPData::new(team_number),
+            ds_control: DSControl::FMSPartial,
+        }
+    }
+}
+
+#[derive(Clone)]
 pub enum DSControl {
     Uncontrolled,
     FMSFull,
     FMSPartial,
 }
 
-pub async fn new_driverstation(team_number: u16, shared_udp_socket: Arc<UdpSocket>) {
-    let driverstation_connection = DriverstationConnection{
-        team_number,
-        driverstation_udp: DSUDPData {
-            team_number,
-            alliance_station: BLUE_1,
-            control_mode: [ControlMode::Teleop, ControlMode::Disabled],
-            is_ds_alive: true,
-            is_e_stopped: true
-        },
-        ds_control: DSControl::FMSFull,
-    };
+pub async fn new_driverstation(
+    team_number: u16,
+    shared_udp_socket: Arc<UdpSocket>,
+    fms: Arc<Mutex<FMS>>,
+) {
+    println!(
+        "new driverstation control thread created for team {}",
+        team_number
+    );
 
-    println!("new driverstation control thread created for team {}", team_number);
-
-    let team_number_string = format!("{team_number}");
+    let team_number_string = format!("{}", team_number);
     let upper_team_numbers = if team_number_string.chars().count() > 5 {
         &team_number_string[0..3]
     } else {
@@ -42,16 +58,51 @@ pub async fn new_driverstation(team_number: u16, shared_udp_socket: Arc<UdpSocke
     } else {
         &team_number_string[2..4]
     };
-    let driverstation_ip = match driverstation_connection.ds_control {
-        DSControl::FMSFull => format!("10.{upper_team_numbers}.{lower_team_numbers}.5:1120"),
-        DSControl::FMSPartial => format!("10.{upper_team_numbers}.{lower_team_numbers}.5:1121"),
-        DSControl::Uncontrolled => format!("0.0.0.0:1120")
-    };
 
     loop {
-        shared_udp_socket.send_to(&create_udp_packet(driverstation_connection.driverstation_udp.clone()), &driverstation_ip).await;
-        println!("sent udp packet to {}", &driverstation_ip);
+        let mut driverstation_ip: String = "".to_string();
+        let mut driverstation_connection: DriverstationConnection =
+            DriverstationConnection::new(team_number);
+        let mut found_driverstation = false;
+
+        {
+            let fms_lock = fms.lock().unwrap();
+            let driverstation_list = fms_lock.driverstations.clone();
+
+            if let Some(driverstation_connection_position) = driverstation_list
+                .iter()
+                .position(|driverstation| driverstation.team_number == team_number)
+            {
+                {
+                    driverstation_connection = fms_lock
+                        .driverstations
+                        .get(driverstation_connection_position)
+                        .unwrap()
+                        .clone();
+                    driverstation_ip = match driverstation_connection.ds_control {
+                        DSControl::FMSFull => {
+                            format!("10.{upper_team_numbers}.{lower_team_numbers}.5:1120")
+                        }
+                        DSControl::FMSPartial => {
+                            format!("10.{upper_team_numbers}.{lower_team_numbers}.5:1121")
+                        }
+                        DSControl::Uncontrolled => format!("0.0.0.0:1120"),
+                    };
+                }
+                found_driverstation = true;
+            } else {
+                println!("could not find drriverstation connection in driverstation vec");
+            }
+        }
+        if found_driverstation {
+            _ = shared_udp_socket
+                .send_to(
+                    &create_udp_packet(driverstation_connection.driverstation_udp.clone()),
+                    &driverstation_ip,
+                )
+                .await;
+            println!("sent udp packet to {}", &driverstation_ip);
+        }
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
 }
-

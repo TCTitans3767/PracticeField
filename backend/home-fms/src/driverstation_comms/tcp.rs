@@ -1,11 +1,11 @@
 use std::{
     fmt::{Display, write},
-    net::SocketAddr, sync::Arc,
+    net::SocketAddr, sync::{Arc, Mutex},
 };
 
 use tokio::{io::AsyncReadExt, net::{TcpStream, UdpSocket}};
 
-use crate::driverstation_comms::driverstation_connection::new_driverstation;
+use crate::driverstation_comms::{driverstation_connection::{DriverstationConnection, new_driverstation}, fms::FMS};
 
 pub struct ToDS {}
 
@@ -137,7 +137,7 @@ pub fn parse_driverstation_tcp(mut data: Vec<u8>) -> anyhow::Result<FromDS> {
     })
 }
 
-pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr, shared_udp_socket: Arc<UdpSocket>) {
+pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr, shared_udp_socket: Arc<UdpSocket>, fms: Arc<Mutex<FMS>>) {
     let mut team_number_recieved = false;
     loop {
         let mut buf = [0; 1024];
@@ -159,7 +159,9 @@ pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr, shared_udp
                     // println!("Team number: {}", team_number.team_number);
                     if team_number_recieved == false {
                         team_number_recieved = true;
-                        tokio::spawn(new_driverstation(team_number.team_number, shared_udp_socket.clone()));
+                        let mut fms_mut = fms.lock().unwrap();
+                        fms_mut.add_ds(team_number.team_number);
+                        tokio::spawn(new_driverstation(team_number.team_number, shared_udp_socket.clone(), fms.clone()));
                     }
                 }
                 _ => todo!()

@@ -13,6 +13,18 @@ pub struct DSUDPData {
     pub is_ds_alive: bool,
 }
 
+impl DSUDPData {
+    pub fn new(team_number: u16) -> Self {
+        Self {
+            team_number,
+            control_mode: [ControlMode::Teleop, ControlMode::Disabled],
+            alliance_station: BLUE_1,
+            is_e_stopped: false,
+            is_ds_alive: false,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub enum ControlMode {
     EStop,
