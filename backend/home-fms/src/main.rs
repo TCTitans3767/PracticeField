@@ -15,7 +15,6 @@ use crate::driverstation_comms::{
     tcp::{ds_tcp_listener, parse_driverstation_tcp},
     udp::{self, BLUE_1},
 };
-use crate::interface::status;
 
 const TCP_LISTENER_PORT: &str = "127.0.0.1:8080";
 
@@ -36,25 +35,22 @@ async fn main() -> anyhow::Result<()> {
         fms.clone(),
     ));
 
+    // TODO: Test client - uncomment to test with mock driver station
     // {
-    //     fms.lock().unwrap().add_to_match(4028, BLUE_1);
+    //     let mut stream = TcpStream::connect(TCP_LISTENER_PORT).await?;
+    //     let message: [u8; 5] = [0xff, 0xff, 0x18, 0x0e, 0xb7];
+    //     tokio::spawn(async move {
+    //         loop {
+    //             stream
+    //                 .write_all(&message)
+    //                 .await
+    //                 .context("failed to write to tcp stream").unwrap();
+    //             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    //         }
+    //     });
     // }
 
-    let mut stream = TcpStream::connect(TCP_LISTENER_PORT).await?;
-
-    let message: [u8; 5] = [0xff, 0xff, 0x18, 0x0e, 0xb7];
-
-    tokio::spawn(async move {
-        loop {
-            stream
-                .write_all(&message)
-                .await
-                .context("failed to write to tcp stream").unwrap();
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-        }
-    });
-
-    let _ = HttpServer::new(|| App::new().route("/status", web::get().to(status)))
+    let _ = HttpServer::new(|| App::new().route("/status", web::get().to(interface::status)))
         .bind("127.0.0.1:2000")
         .context("failed to run web server")?
         .run()

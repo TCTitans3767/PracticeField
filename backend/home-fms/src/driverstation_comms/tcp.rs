@@ -156,15 +156,38 @@ pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr, shared_udp
         if let Ok(packet) = parse_driverstation_tcp(buf.to_vec()) {
             match packet.tag {
                 TagType::TeamNumber(team_number) => {
-                    // println!("Team number: {}", team_number.team_number);
-                    if team_number_recieved == false {
+                    if !team_number_recieved {
                         team_number_recieved = true;
-                        let mut fms_mut = fms.lock().unwrap();
-                        fms_mut.add_ds(team_number.team_number);
-                        tokio::spawn(new_driverstation(team_number.team_number, shared_udp_socket.clone(), fms.clone()));
+                        match fms.lock() {
+                            Ok(mut fms_mut) => {
+                                fms_mut.add_ds(team_number.team_number);
+                                tokio::spawn(new_driverstation(team_number.team_number, shared_udp_socket.clone(), fms.clone()));
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to acquire FMS lock: {e}");
+                                return;
+                            }
+                        }
                     }
                 }
-                _ => todo!()
+                TagType::Version(_) => {
+                    eprintln!("Version tag parsing not yet implemented");
+                }
+                TagType::UsageReport(_) => {
+                    eprintln!("Usage report processing not yet implemented");
+                }
+                TagType::LogData(_) => {
+                    eprintln!("Log data processing not yet implemented");
+                }
+                TagType::ErrorEventData(_) => {
+                    eprintln!("Error event data processing not yet implemented");
+                }
+                TagType::ChallengeResponse(_) => {
+                    eprintln!("Challenge response processing not yet implemented");
+                }
+                TagType::DSPing(_) => {
+                    eprintln!("DS ping processing not yet implemented");
+                }
             }
         }
     }

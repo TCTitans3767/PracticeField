@@ -65,42 +65,50 @@ pub async fn new_driverstation(
         let mut found_driverstation = false;
 
         {
-            let fms_lock = fms.lock().unwrap();
-            let driverstation_list = fms_lock.driverstations.clone();
+            match fms.lock() {
+                Ok(fms_lock) => {
+                    let driverstation_list = fms_lock.driverstations.clone();
 
-            if let Some(driverstation_connection_position) = driverstation_list
-                .iter()
-                .position(|driverstation| driverstation.team_number == team_number)
-            {
-                {
-                    driverstation_connection = fms_lock
-                        .driverstations
-                        .get(driverstation_connection_position)
-                        .unwrap()
-                        .clone();
-                    driverstation_ip = match driverstation_connection.ds_control {
-                        DSControl::FMSFull => {
-                            format!("10.{upper_team_numbers}.{lower_team_numbers}.5:1120")
+                    if let Some(driverstation_connection_position) = driverstation_list
+                        .iter()
+                        .position(|driverstation| driverstation.team_number == team_number)
+                    {
+                        if let Some(ds_conn) = fms_lock.driverstations.get(driverstation_connection_position) {
+                            driverstation_connection = ds_conn.clone();
+                            driverstation_ip = match driverstation_connection.ds_control {
+                                DSControl::FMSFull => {
+                                    format!("10.{upper_team_numbers}.{lower_team_numbers}.5:1120")
+                                }
+                                DSControl::FMSPartial => {
+                                    format!("10.{upper_team_numbers}.{lower_team_numbers}.5:1121")
+                                }
+                                DSControl::Uncontrolled => format!("0.0.0.0:1120"),
+                            };
                         }
-                        DSControl::FMSPartial => {
-                            format!("10.{upper_team_numbers}.{lower_team_numbers}.5:1121")
-                        }
-                        DSControl::Uncontrolled => format!("0.0.0.0:1120"),
-                    };
+                        found_driverstation = true;
+                    } else {
+                        println!("could not find driverstation connection in driverstation vec");
+                    }
                 }
-                found_driverstation = true;
-            } else {
-                println!("could not find drriverstation connection in driverstation vec");
+                Err(e) => {
+                    eprintln!("Failed to acquire FMS lock: {e}");
+                    return;
+                }
             }
         }
         if found_driverstation {
-            _ = shared_udp_socket
+            match shared_udp_socket
                 .send_to(
                     &create_udp_packet(&driverstation_connection),
                     &driverstation_ip,
                 )
-                .await;
-            println!("sent udp packet to {}", &driverstation_ip);
+                .await
+            {
+                Ok(_) => println!("sent udp packet to {}", &driverstation_ip),
+                Err(e) => {
+                    eprintln!("Failed to send UDP packet to {}: {e}", driverstation_ip);
+                }
+            }
         } else {
             println!("could not find driverstation connection for {team_number}; terminating udp connection");
             return;
