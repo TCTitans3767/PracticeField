@@ -50,8 +50,8 @@ pub fn create_udp_packet(data: &DriverstationConnection) -> Vec<u8> {
     packet_data.push(0x0); // com version
 
     let mut control_byte: u8 = 0x00;
-    let period = data.control_mode.get(0).unwrap();
-    let enabled = data.control_mode.get(1).unwrap();
+    let period = &data.control_mode[0];
+    let enabled = &data.control_mode[1];
 
     match period {
         ControlMode::Teleop => control_byte = control_byte | 0b0000_0000,

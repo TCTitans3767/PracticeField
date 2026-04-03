@@ -7,7 +7,7 @@ use tokio::net::UdpSocket;
 
 use crate::driverstation_comms::{
     fms::FMS,
-    udp::{BLUE_1, ControlMode, create_udp_packet},
+    udp::{create_udp_packet, ControlMode, BLUE_1},
 };
 
 #[derive(Clone)]
@@ -15,7 +15,11 @@ pub struct DriverstationConnection {
     pub team_number: u16,
     pub ds_control: DSControl,
     pub alliance_station: u8,
-    pub control_mode: [ControlMode; 2]
+    /// Robot control mode: [period_mode, enabled_state]
+    /// Index 0: ControlMode::Teleop, Test, or Autonomous
+    /// Index 1: ControlMode::Enabled or Disabled
+    /// SAFETY: Must always be exactly 2 elements - enforced by type system
+    pub control_mode: [ControlMode; 2],
 }
 
 impl DriverstationConnection {
@@ -24,7 +28,7 @@ impl DriverstationConnection {
             team_number,
             ds_control: DSControl::FMSPartial,
             alliance_station: BLUE_1,
-            control_mode: [ControlMode::Teleop, ControlMode::Disabled]
+            control_mode: [ControlMode::Teleop, ControlMode::Disabled],
         }
     }
 }
@@ -73,7 +77,10 @@ pub async fn new_driverstation(
                         .iter()
                         .position(|driverstation| driverstation.team_number == team_number)
                     {
-                        if let Some(ds_conn) = fms_lock.driverstations.get(driverstation_connection_position) {
+                        if let Some(ds_conn) = fms_lock
+                            .driverstations
+                            .get(driverstation_connection_position)
+                        {
                             driverstation_connection = ds_conn.clone();
                             driverstation_ip = match driverstation_connection.ds_control {
                                 DSControl::FMSFull => {
@@ -92,7 +99,7 @@ pub async fn new_driverstation(
                 }
                 Err(e) => {
                     eprintln!("Failed to acquire FMS lock: {e}");
-                    return;
+                    continue;
                 }
             }
         }

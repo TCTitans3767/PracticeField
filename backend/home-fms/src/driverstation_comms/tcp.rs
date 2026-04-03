@@ -1,11 +1,19 @@
 use std::{
-    fmt::{Display, write},
-    net::SocketAddr, sync::{Arc, Mutex},
+    fmt::{write, Display},
+    net::SocketAddr,
+    sync::{Arc, Mutex},
 };
 
-use tokio::{io::AsyncReadExt, net::{TcpStream, UdpSocket}};
+use anyhow::Context;
+use tokio::{
+    io::AsyncReadExt,
+    net::{TcpStream, UdpSocket},
+};
 
-use crate::driverstation_comms::{driverstation_connection::{DriverstationConnection, new_driverstation}, fms::FMS};
+use crate::driverstation_comms::{
+    driverstation_connection::{new_driverstation, DriverstationConnection},
+    fms::FMS,
+};
 
 pub struct ToDS {}
 
@@ -74,70 +82,134 @@ pub const ROBOT_TELEOP_MASK: u8 = 0b0000_0100;
 pub const ROBOT_AUTO_MASK: u8 = 0b0000_0010;
 pub const ROBOT_DISABLE_MASK: u8 = 0b0000_0001;
 
-pub fn parse_driverstation_tcp(mut data: Vec<u8>) -> anyhow::Result<FromDS> {
-    let size_upper = (data.remove(0) as u16) << 8;
-    let size_lower = data.remove(0) as u16;
+/// Safely remove and return a single byte from the packet, with context
+fn safe_pop(data: &mut Vec<u8>) -> anyhow::Result<u8> {
+    if data.is_empty() {
+        anyhow::bail!("Packet too short: expected at least 1 more byte, got 0");
+    }
+    Ok(data.remove(0))
+}
 
-    let id = data.remove(0);
+/// Safely extract a big-endian u16 (two consecutive bytes)
+fn safe_pop_u16(data: &mut Vec<u8>) -> anyhow::Result<u16> {
+    let upper = safe_pop(data)? as u16;
+    let lower = safe_pop(data)? as u16;
+    Ok((upper << 8) | lower)
+}
+
+/// Safely extract and validate a u8 field is within expected range
+fn safe_pop_validated(
+    data: &mut Vec<u8>,
+    min: u8,
+    max: u8,
+    field_name: &str,
+) -> anyhow::Result<u8> {
+    let value = safe_pop(data)?;
+    if value < min || value > max {
+        anyhow::bail!(
+            "Field {} value {} out of range [{}, {}]",
+            field_name,
+            value,
+            min,
+            max
+        );
+    }
+    Ok(value)
+}
+
+pub fn parse_driverstation_tcp(mut data: Vec<u8>) -> anyhow::Result<FromDS> {
+    let size =
+        safe_pop_u16(&mut data).context("TCP Parser: Could not parse size; expected two bytes")?;
+
+    let tag_id =
+        safe_pop(&mut data).context("TCP Parser: Could not parse tag_id; expected one byte")?;
 
     let mut tag_type = TagType::DSPing(DSPing {});
 
-    match id {
+    match tag_id {
         0x00..=0x07 => {
             // TODO Version stuffs
         }
         0x15 => {
-            let team_number_upper = (data.remove(0) as u16) << 8;
-            let team_number_lower = data.remove(0) as u16;
-            let unknown = data.remove(0);
-            let entry_data = EntryData { data: data };
+            // UsageReport parsing
+
+            let team_num = safe_pop_u16(&mut data)
+                .context("UsageReport: failed to parse team_num, 2 bytes required")?;
+
+            let unknown = safe_pop(&mut data).context(
+                "UsageReport: failed to parse unknown value, should be one byte in theory",
+            )?;
+
             tag_type = TagType::UsageReport(UsageReport {
-                team_num: team_number_upper | team_number_lower,
-                unknown: unknown,
-                entry_data: entry_data,
+                team_num,
+                unknown,
+                entry_data: EntryData { data: data },
             })
         }
         0x16 => {
-            let trip_time = data.remove(0);
-            let lost_packets = data.remove(0);
-            let battery_xx = data.remove(0) as u16;
-            let battery_yy = data.remove(0) as u16;
-            let robot_status = data.remove(0);
-            let can = data.remove(0);
-            let signal_db = data.remove(0);
-            let bandwidth_high = (data.remove(0) as u16) << 8;
-            let bandwidth_low = data.remove(0) as u16;
+            let trip_time = safe_pop(&mut data)
+                .context("LogData: Could not parse trip_time, expected one byte")?;
+
+            let lost_packets = safe_pop(&mut data)
+                .context("LogData: Could not parse lost_packets, expected one byte")?;
+
+            let battery_xx = safe_pop(&mut data)
+                .context("LogData: Could not parse battery_xx, expected one byte")?
+                as u16;
+
+            let battery_yy = safe_pop(&mut data)
+                .context("LogData: Could not parse battery_yy, expected one byte")?
+                as u16;
+
+            let robot_status = safe_pop(&mut data)
+                .context("LogData: Could not parse robot_status, expected one byte")?;
+
+            let can =
+                safe_pop(&mut data).context("LogData: Could not parse can, expected one byte")?;
+
+            let signal_db = safe_pop(&mut data)
+                .context("LogData: Could not parse signal_db, expected one byte")?;
+
+            let bandwidth = safe_pop_u16(&mut data)
+                .context("LogData: could not parse bandwith, expected two bytes")?;
+
+            let battery = (battery_xx + battery_yy) / 256;
+
             tag_type = TagType::LogData(LogData {
                 trip_time,
                 lost_packets,
-                battery: (battery_xx + battery_yy) / 256,
+                battery,
                 robot_status,
                 can,
                 signal_db,
-                bandwidth: bandwidth_high | bandwidth_low,
+                bandwidth,
             })
         }
         0x17 => {
             // TODO: Error and event data
         }
         0x18 => {
-            let team_number_high = (data.remove(0) as u16) << 8;
-            let team_number_low = data.remove(0) as u16;
-            tag_type = TagType::TeamNumber(TeamNumber {
-                team_number: team_number_high | team_number_low,
-            })
+            let team_number = safe_pop_u16(&mut data)
+                .context("TeamNumber: Could not parse team_number; expected two bytes")?;
+
+            tag_type = TagType::TeamNumber(TeamNumber { team_number })
         }
         _ => {}
     }
 
     Ok(FromDS {
-        size: size_upper | size_lower,
-        tag_id: id,
+        size,
+        tag_id,
         tag: tag_type,
     })
 }
 
-pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr, shared_udp_socket: Arc<UdpSocket>, fms: Arc<Mutex<FMS>>) {
+pub async fn ds_tcp_listener(
+    mut socket: TcpStream,
+    addr: SocketAddr,
+    shared_udp_socket: Arc<UdpSocket>,
+    fms: Arc<Mutex<FMS>>,
+) {
     let mut team_number_recieved = false;
     loop {
         let mut buf = [0; 1024];
@@ -153,15 +225,19 @@ pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr, shared_udp
 
         println!("recieved {} bytes from {}", n, addr);
 
-        if let Ok(packet) = parse_driverstation_tcp(buf.to_vec()) {
-            match packet.tag {
+        match parse_driverstation_tcp(buf[..n].to_vec()) {
+            Ok(packet) => match packet.tag {
                 TagType::TeamNumber(team_number) => {
                     if !team_number_recieved {
                         team_number_recieved = true;
                         match fms.lock() {
                             Ok(mut fms_mut) => {
                                 fms_mut.add_ds(team_number.team_number);
-                                tokio::spawn(new_driverstation(team_number.team_number, shared_udp_socket.clone(), fms.clone()));
+                                tokio::spawn(new_driverstation(
+                                    team_number.team_number,
+                                    shared_udp_socket.clone(),
+                                    fms.clone(),
+                                ));
                             }
                             Err(e) => {
                                 eprintln!("Failed to acquire FMS lock: {e}");
@@ -188,8 +264,11 @@ pub async fn ds_tcp_listener(mut socket: TcpStream, addr: SocketAddr, shared_udp
                 TagType::DSPing(_) => {
                     eprintln!("DS ping processing not yet implemented");
                 }
+            },
+            Err(e) => {
+                eprintln!("Malformed Packet: \n     {e}");
             }
-        }
+        };
     }
 }
 

@@ -1,9 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use actix_web::{App, HttpServer, web};
+use actix_web::{web, App, HttpServer};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::{TcpListener, TcpStream, UdpSocket, tcp},
+    net::{tcp, TcpListener, TcpStream, UdpSocket},
 };
 
 use anyhow::{Context, Ok};
@@ -36,19 +36,22 @@ async fn main() -> anyhow::Result<()> {
     ));
 
     // TODO: Test client - uncomment to test with mock driver station
-    // {
-    //     let mut stream = TcpStream::connect(TCP_LISTENER_PORT).await?;
-    //     let message: [u8; 5] = [0xff, 0xff, 0x18, 0x0e, 0xb7];
-    //     tokio::spawn(async move {
-    //         loop {
-    //             stream
-    //                 .write_all(&message)
-    //                 .await
-    //                 .context("failed to write to tcp stream").unwrap();
-    //             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    //         }
-    //     });
-    // }
+    {
+        let mut stream = TcpStream::connect(TCP_LISTENER_PORT).await?;
+        // let message: [u8; 5] = [0xff, 0xff, 0x18, 0x0e, 0xb7];
+        let message: [u8; 3] = [0xff, 0xff, 0x18];
+
+        tokio::spawn(async move {
+            loop {
+                stream
+                    .write_all(&message)
+                    .await
+                    .context("failed to write to tcp stream")
+                    .unwrap();
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            }
+        });
+    }
 
     let _ = HttpServer::new(|| App::new().route("/status", web::get().to(interface::status)))
         .bind("127.0.0.1:2000")
