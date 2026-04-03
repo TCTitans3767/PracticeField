@@ -2,6 +2,8 @@ use std::time::Duration;
 
 use tokio::net::UdpSocket;
 
+use crate::driverstation_comms::driverstation_connection::DriverstationConnection;
+
 pub struct FMSUDPPacket {}
 
 #[derive(Clone)]
@@ -9,8 +11,6 @@ pub struct DSUDPData {
     pub team_number: u16,
     pub control_mode: [ControlMode; 2],
     pub alliance_station: u8,
-    pub is_e_stopped: bool,
-    pub is_ds_alive: bool,
 }
 
 impl DSUDPData {
@@ -19,8 +19,6 @@ impl DSUDPData {
             team_number,
             control_mode: [ControlMode::Teleop, ControlMode::Disabled],
             alliance_station: BLUE_1,
-            is_e_stopped: false,
-            is_ds_alive: false,
         }
     }
 }
@@ -43,7 +41,7 @@ pub const BLUE_1: u8 = 3;
 pub const BLUE_2: u8 = 4;
 pub const BLUE_3: u8 = 5;
 
-pub fn create_udp_packet(data: DSUDPData) -> Vec<u8> {
+pub fn create_udp_packet(data: &DriverstationConnection) -> Vec<u8> {
     let mut packet_data: Vec<u8> = Vec::new();
 
     packet_data.push(0x0); // sequence num high

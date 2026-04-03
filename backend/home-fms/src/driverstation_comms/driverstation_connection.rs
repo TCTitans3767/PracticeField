@@ -1,6 +1,4 @@
 use std::{
-    fmt::format,
-    ops::Deref,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -8,24 +6,25 @@ use std::{
 use tokio::net::UdpSocket;
 
 use crate::driverstation_comms::{
-    driverstation_connection,
     fms::FMS,
-    udp::{BLUE_1, ControlMode, DSUDPData, create_udp_packet},
+    udp::{BLUE_1, ControlMode, create_udp_packet},
 };
 
 #[derive(Clone)]
 pub struct DriverstationConnection {
-    team_number: u16,
-    driverstation_udp: DSUDPData,
-    ds_control: DSControl,
+    pub team_number: u16,
+    pub ds_control: DSControl,
+    pub alliance_station: u8,
+    pub control_mode: [ControlMode; 2]
 }
 
 impl DriverstationConnection {
     pub fn new(team_number: u16) -> Self {
         Self {
             team_number,
-            driverstation_udp: DSUDPData::new(team_number),
             ds_control: DSControl::FMSPartial,
+            alliance_station: BLUE_1,
+            control_mode: [ControlMode::Teleop, ControlMode::Disabled]
         }
     }
 }
@@ -97,11 +96,14 @@ pub async fn new_driverstation(
         if found_driverstation {
             _ = shared_udp_socket
                 .send_to(
-                    &create_udp_packet(driverstation_connection.driverstation_udp.clone()),
+                    &create_udp_packet(&driverstation_connection),
                     &driverstation_ip,
                 )
                 .await;
             println!("sent udp packet to {}", &driverstation_ip);
+        } else {
+            println!("could not find driverstation connection for {team_number}; terminating udp connection");
+            return;
         }
         tokio::time::sleep(Duration::from_millis(500)).await;
     }

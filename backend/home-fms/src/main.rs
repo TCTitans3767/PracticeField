@@ -13,7 +13,7 @@ pub mod driverstation_comms;
 use crate::driverstation_comms::{
     fms::{self, FMS},
     tcp::{ds_tcp_listener, parse_driverstation_tcp},
-    udp,
+    udp::{self, BLUE_1},
 };
 use crate::interface::status;
 
@@ -28,15 +28,17 @@ async fn main() -> anyhow::Result<()> {
 
     let ds_udp_socket = UdpSocket::bind("0.0.0.0:8080").await?;
     let shared_udp_socket = Arc::new(ds_udp_socket);
-    let fms = Arc::new(Mutex::new(FMS {
-        driverstations: Vec::new(),
-    }));
+    let fms = Arc::new(Mutex::new(FMS::default()));
 
     tokio::spawn(tcp_listener(
         ds_listener,
         shared_udp_socket.clone(),
         fms.clone(),
     ));
+
+    // {
+    //     fms.lock().unwrap().add_to_match(4028, BLUE_1);
+    // }
 
     let mut stream = TcpStream::connect(TCP_LISTENER_PORT).await?;
 
