@@ -1364,18 +1364,18 @@ cargo run
 
 ## Phase 1 Completion Checklist
 
-- [ ] Created `safe_pop()` and `safe_pop_u16()` helpers
-- [ ] Updated all `.remove()` calls in `parse_driverstation_tcp()`
-- [ ] Replaced `.unwrap()` in `udp.rs` with direct indexing
-- [ ] Made `ds_tcp_listener()` return `Result<()>`
-- [ ] Made `new_driverstation()` return `Result<()>`
-- [ ] Replaced all `match fms.lock()` with error propagation
-- [ ] Initialized `tracing_subscriber` in `main.rs`
-- [ ] Replaced all `println!()` with `info!()`/`debug!()`
-- [ ] Replaced all `eprintln!()` with `warn!()`/`error!()`
+- [x] Created `safe_pop()` and `safe_pop_u16()` helpers
+- [x] Updated all `.remove()` calls in `parse_driverstation_tcp()`
+- [x] Replaced `.unwrap()` in `udp.rs` with direct indexing
+- [x] Made `ds_tcp_listener()` return `Result<()>`
+- [x] Made `new_driverstation()` return `Result<()>`
+- [x] Replaced all `match fms.lock()` with error propagation
+- [x] Initialized `tracing_subscriber` in `main.rs`
+- [x] Replaced all `println!()` with `info!()`/`debug!()`
+- [x] Replaced all `eprintln!()` with `warn!()`/`error!()`
 - [ ] Implemented Version tag handler (0x00-0x07)
 - [ ] Implemented ErrorEventData handler (0x17)
-- [ ] Added `parse_team_ip_octets()` helper
+- [x] Added `parse_team_ip_octets()` helper
 - [ ] Added connection timeout handling
 - [ ] `cargo build` passes without warnings
 - [ ] `cargo clippy --all-targets` passes

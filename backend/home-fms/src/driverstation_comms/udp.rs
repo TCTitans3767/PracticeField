@@ -23,7 +23,7 @@ impl DSUDPData {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ControlMode {
     EStop,
     AStop,

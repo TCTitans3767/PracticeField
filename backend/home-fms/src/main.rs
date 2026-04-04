@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use tracing::{debug, warn, error, info};
 
 use actix_web::{web, App, HttpServer};
 use tokio::{
@@ -11,35 +12,44 @@ use anyhow::{Context, Ok};
 pub mod driverstation_comms;
 
 use crate::driverstation_comms::{
-    fms::{self, FMS},
-    tcp::{ds_tcp_listener, parse_driverstation_tcp},
-    udp::{self, BLUE_1},
+    fms_commands::init_fms_queue,
+    tcp::ds_tcp_listener,
 };
 
 const TCP_LISTENER_PORT: &str = "127.0.0.1:8080";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_target(true) // Show module names in logs
+        .with_thread_ids(true) // Include thread ID
+        .with_line_number(true) // Include source line numbers
+        .with_writer(std::io::stderr) // Write to stderr
+        .init();
+
+    // Initialize FMS command queue (single global instance)
+    let _fms_queue = init_fms_queue();
+    debug!("FMS command queue initialized");
+
     let ds_listener = TcpListener::bind(TCP_LISTENER_PORT)
         .await
         .context("Failed to open TCP listener server")?;
-    println!("Spawned ds_listner server at port {}", TCP_LISTENER_PORT);
+
+    debug!("Spawned ds_listner server at port {}", TCP_LISTENER_PORT);
 
     let ds_udp_socket = UdpSocket::bind("0.0.0.0:8080").await?;
     let shared_udp_socket = Arc::new(ds_udp_socket);
-    let fms = Arc::new(Mutex::new(FMS::default()));
 
     tokio::spawn(tcp_listener(
         ds_listener,
         shared_udp_socket.clone(),
-        fms.clone(),
     ));
 
     // TODO: Test client - uncomment to test with mock driver station
     {
         let mut stream = TcpStream::connect(TCP_LISTENER_PORT).await?;
-        // let message: [u8; 5] = [0xff, 0xff, 0x18, 0x0e, 0xb7];
-        let message: [u8; 3] = [0xff, 0xff, 0x18];
+        let message: [u8; 5] = [0xff, 0xff, 0x18, 0x0e, 0xb7];
 
         tokio::spawn(async move {
             loop {
@@ -65,7 +75,6 @@ async fn main() -> anyhow::Result<()> {
 async fn tcp_listener(
     listener: TcpListener,
     shared_udp_socket: Arc<UdpSocket>,
-    fms: Arc<Mutex<FMS>>,
 ) -> anyhow::Result<()> {
     loop {
         let (socket, addr) = listener
@@ -73,13 +82,12 @@ async fn tcp_listener(
             .await
             .context("Unable to retrieve socket and address from tcp listener")?;
 
-        println!("connection started from address {}", addr);
+        debug!("connection started from address {}", addr);
 
         tokio::spawn(ds_tcp_listener(
             socket,
             addr,
             shared_udp_socket.clone(),
-            fms.clone(),
         ));
     }
 }

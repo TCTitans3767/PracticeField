@@ -1,7 +1,7 @@
 use std::{
-    fmt::{write, Display},
+    fmt::Display,
     net::SocketAddr,
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 
 use anyhow::Context;
@@ -9,20 +9,23 @@ use tokio::{
     io::AsyncReadExt,
     net::{TcpStream, UdpSocket},
 };
+use tracing::{debug, warn};
 
 use crate::driverstation_comms::{
-    driverstation_connection::{new_driverstation, DriverstationConnection},
-    fms::FMS,
+    driverstation_connection::new_driverstation,
+    fms_commands::get_fms_queue,
 };
 
 pub struct ToDS {}
 
+#[derive(Debug)]
 pub struct FromDS {
     pub size: u16,
     pub tag_id: u8,
     pub tag: TagType,
 }
 
+#[derive(Debug)]
 pub enum TagType {
     Version(VersionTag),
     UsageReport(UsageReport),
@@ -33,44 +36,52 @@ pub enum TagType {
     DSPing(DSPing),
 }
 
+#[derive(Debug)]
 pub struct VersionTag {
-    status: String,
-    version: String,
+    pub status: String,
+    pub version: String,
 }
 
+#[derive(Debug)]
 pub struct UsageReport {
-    team_num: u16,
-    unknown: u8,
-    entry_data: EntryData,
+    pub team_num: u16,
+    pub unknown: u8,
+    pub entry_data: EntryData,
 }
 
+#[derive(Debug)]
 pub struct LogData {
-    trip_time: u8,
-    lost_packets: u8,
-    battery: u16, // recieved as xxyy, (xx + yy)/256 = voltage
-    robot_status: u8,
-    can: u8,       // value is halved
-    signal_db: u8, // value is halved
-    bandwidth: u16,
+    pub trip_time: u8,
+    pub lost_packets: u8,
+    pub battery: u16, // recieved as xxyy, (xx + yy)/256 = voltage
+    pub robot_status: u8,
+    pub can: u8,       // value is halved
+    pub signal_db: u8, // value is halved
+    pub bandwidth: u16,
 }
 
+#[derive(Debug)]
 pub struct ErrorEventData {
-    message_count: u32,
-    timestamp: u64,
-    unknown: u64, // should always be 0x86 0x48 0xb0 0x00 0x00 0x00 0x00 0x00
-    log_message: String,
+    pub message_count: u32,
+    pub timestamp: u64,
+    pub unknown: u64, // should always be 0x86 0x48 0xb0 0x00 0x00 0x00 0x00 0x00
+    pub log_message: String,
 }
 
+#[derive(Debug)]
 pub struct TeamNumber {
-    team_number: u16,
+    pub team_number: u16,
 }
 
+#[derive(Debug)]
 pub struct ChallengeResponse {}
 
+#[derive(Debug)]
 pub struct DSPing {}
 
+#[derive(Debug)]
 pub struct EntryData {
-    data: Vec<u8>,
+    pub data: Vec<u8>,
 }
 
 pub const BROWNOUT_MASK: u8 = 0b1000_0000;
@@ -83,7 +94,7 @@ pub const ROBOT_AUTO_MASK: u8 = 0b0000_0010;
 pub const ROBOT_DISABLE_MASK: u8 = 0b0000_0001;
 
 /// Safely remove and return a single byte from the packet, with context
-fn safe_pop(data: &mut Vec<u8>) -> anyhow::Result<u8> {
+pub fn safe_pop(data: &mut Vec<u8>) -> anyhow::Result<u8> {
     if data.is_empty() {
         anyhow::bail!("Packet too short: expected at least 1 more byte, got 0");
     }
@@ -91,14 +102,14 @@ fn safe_pop(data: &mut Vec<u8>) -> anyhow::Result<u8> {
 }
 
 /// Safely extract a big-endian u16 (two consecutive bytes)
-fn safe_pop_u16(data: &mut Vec<u8>) -> anyhow::Result<u16> {
+pub fn safe_pop_u16(data: &mut Vec<u8>) -> anyhow::Result<u16> {
     let upper = safe_pop(data)? as u16;
     let lower = safe_pop(data)? as u16;
     Ok((upper << 8) | lower)
 }
 
 /// Safely extract and validate a u8 field is within expected range
-fn safe_pop_validated(
+pub fn safe_pop_validated(
     data: &mut Vec<u8>,
     min: u8,
     max: u8,
@@ -208,9 +219,10 @@ pub async fn ds_tcp_listener(
     mut socket: TcpStream,
     addr: SocketAddr,
     shared_udp_socket: Arc<UdpSocket>,
-    fms: Arc<Mutex<FMS>>,
 ) {
     let mut team_number_recieved = false;
+    let fms_queue = get_fms_queue();
+    
     loop {
         let mut buf = [0; 1024];
 
@@ -218,55 +230,50 @@ pub async fn ds_tcp_listener(
             Ok(n) if n == 0 => return,
             Ok(n) => n,
             Err(e) => {
-                eprintln!("failed to read: {e}");
+                warn!("failed to read: {e}");
                 return;
             }
         };
 
-        println!("recieved {} bytes from {}", n, addr);
+        debug!("recieved {} bytes from {}", n, addr);
 
         match parse_driverstation_tcp(buf[..n].to_vec()) {
             Ok(packet) => match packet.tag {
                 TagType::TeamNumber(team_number) => {
                     if !team_number_recieved {
                         team_number_recieved = true;
-                        match fms.lock() {
-                            Ok(mut fms_mut) => {
-                                fms_mut.add_ds(team_number.team_number);
-                                tokio::spawn(new_driverstation(
-                                    team_number.team_number,
-                                    shared_udp_socket.clone(),
-                                    fms.clone(),
-                                ));
-                            }
-                            Err(e) => {
-                                eprintln!("Failed to acquire FMS lock: {e}");
-                                return;
-                            }
-                        }
+                        
+                        // Add driverstation via command queue (no mutex needed!)
+                        fms_queue.add_driver_station(team_number.team_number).await;
+                        
+                        // Spawn UDP controller for this team
+                        tokio::spawn(new_driverstation(
+                            team_number.team_number,
+                            shared_udp_socket.clone(),
+                        ));
                     }
                 }
                 TagType::Version(_) => {
-                    eprintln!("Version tag parsing not yet implemented");
+                    warn!("Version tag parsing not yet implemented");
                 }
                 TagType::UsageReport(_) => {
-                    eprintln!("Usage report processing not yet implemented");
+                    warn!("Usage report processing not yet implemented");
                 }
                 TagType::LogData(_) => {
-                    eprintln!("Log data processing not yet implemented");
+                    warn!("Log data processing not yet implemented");
                 }
                 TagType::ErrorEventData(_) => {
-                    eprintln!("Error event data processing not yet implemented");
+                    warn!("Error event data processing not yet implemented");
                 }
                 TagType::ChallengeResponse(_) => {
-                    eprintln!("Challenge response processing not yet implemented");
+                    warn!("Challenge response processing not yet implemented");
                 }
                 TagType::DSPing(_) => {
-                    eprintln!("DS ping processing not yet implemented");
+                    warn!("DS ping processing not yet implemented");
                 }
             },
             Err(e) => {
-                eprintln!("Malformed Packet: \n     {e}");
+                warn!("Malformed Packet: \n     {e}");
             }
         };
     }
