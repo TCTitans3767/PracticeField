@@ -85,7 +85,7 @@ Focus: Event tracking, historical data, observability
 
 ---
 
-### **Phase 5: Field Radio Integration** (1.5 hours, Optional)
+### **Phase 5: Field Radio Integration** (1.5 hours)
 📄 **[PHASE5_IMPLEMENTATION.md](PHASE5_IMPLEMENTATION.md)**
 
 Focus: Automatic team network configuration on field radio
