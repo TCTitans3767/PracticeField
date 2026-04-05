@@ -38,3 +38,63 @@ Screens:
     - match or last 5 mins of dev time
     - team status over time per match
     - network status over time per match
+
+functionality ties to backend:
+- e/astop control
+    - send estop and station number to backend
+    - send astop and station number to backend
+    - get pins from backend
+    - get station status from backend (network stats, robot status, ds connection status, estop/astop status, team number, etc)
+- match control
+    - send start match
+    - send stop match
+    - send prestart match
+    - send load next match
+    - send take control command
+    - send bypass station command
+    - send estop and station number
+    - get pins
+    - get station status
+    - get AP status
+    - get hub status
+    - get time left
+    - get match status
+    - get match timing settings
+    - send match timing settings
+    - get score
+    - send score
+    - get display pi status
+- network settings
+    - send bluetooth connection settings
+    - send internet access/no access settings
+    - send AP channel and VLAN settings
+    - send enable/disable red side settings
+    - get ap status
+    - get hub status
+    - get internet access status
+    - get station status
+    - send if dev or match
+    - get if dev or match
+- team management
+    - send team numbers for stations
+    - send team pins for their e/astops
+    - send team wpakeys
+    - get team numbers for stations
+    - get team pins for their e/astops
+    - get team wpakeys
+- vh109 flashing
+    - get team number for station
+    - get wpakey for station
+    - (also will need tie in to talk to the radio on seperate eth port)
+- audience display
+    - get match status
+    - get time left
+    - get score
+    - get red activity
+    - get blue activity
+- log viewing
+    - get if dev or match
+    - get log data for match
+    - get last 5 mins of logs for dev time
+
+
